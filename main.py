@@ -1,55 +1,97 @@
-import libpgm
 import json
-import data_prep
+import read_data
+import time
+import tan
+import os.path
+import kruskals
 
 
-def read_dataset(file_path):
-    dataset = []
-    with open(file_path, 'r') as file:
-        for line in file:
-            attribute_values = line.split(',')
-            #   Remove "\n" at the last attribute
-            attribute_values[len(attribute_values)-1] = attribute_values[len(attribute_values)-1][:2]
-            dataset.append(attribute_values)
-    return dataset
+#   Returns a list with all the nodes (attribute names)
+def get_nodes(dataset):
+    nodes = []
+    for attr in dataset[0]:
+        nodes.append(attr)
+    return nodes
 
 
-def define_real_values(dataset_key, dataset):
-    if dataset_key == "KDD+":
-        for data_row in dataset:
-            #   Remove the last (weird) attribute in each row
-            data_row.pop(len(data_row)-1)
-            data_row[0] = float(data_row[0])
-            for index in range(4, 41):
-                data_row[index] = float(data_row[index])
-    else:
-        print("There is not matching dataset key for: {}".format(dataset_key))
+#   Returns a list of all possible edges (in format [[node_a, node_b], ...]]
+def get_edges(nodes_list):
+    edges = []
+    for i in range(len(nodes_list)):
+        if nodes_list[i] == "class":
+            continue
+        for j in range(i+1, len(nodes_list)):
+            if nodes_list[j] == "class":
+                continue
+            edges.append([nodes_list[i], nodes_list[j]])
+    return edges
 
 
-def calculate_intervals(dataset_key, dataset):
-    if dataset_key == "KDD+":
-        class_index = 41
-        attr_values = {0: []}
-        for index in range(4, 41):
-            attr_values[index] = []
+def get_classes(dataset):
+    classes = []
+    for data_row in dataset:
+        if data_row["class"] not in classes:
+            classes.append(data_row["class"])
+    return classes
 
-        for data_row in dataset:
-            attr_values[0].append([data_row[0], data_row[class_index]])
-            for index in range(4, 41):
-                attr_values[index].append([data_row[index], data_row[class_index]])
 
-        interval_cuts = {}
-        for index in attr_values:
-            interval_cuts[index] = data_prep.mdlp(attr_values[index])
-            print(interval_cuts[index])
+def save_json_to_file(data, file_path):
+    dump_file = open(file_path, "w")
+    json.dump(data, dump_file)
+    dump_file.close()
+
+
+def load_json_from_file(file_path):
+    dump_file = open(file_path, "r")
+    return json.load(dump_file)
 
 
 def main():
-    dataset = read_dataset("res/NSL-KDD/KDDTrain+.txt")
-    dataset_key = "KDD+"
-    define_real_values(dataset_key, dataset)
-    intervals = calculate_intervals(dataset_key, dataset)
-    # print(dataset)
+    print("Begin execution.")
+    start_time = time.time()
+
+    if os.path.exists("saved_data/dataset.data") and os.path.exists("saved_data/value_space.data") and os.path.exists("saved_data/intervals.data"):
+        dataset = load_json_from_file("saved_data/dataset.data")
+        value_space_dict = load_json_from_file("saved_data/value_space.data")
+        intervals = load_json_from_file("saved_data/intervals.data")
+        print("Dataset, value space and intervals loaded from files")
+    else:
+        dataset_key = "KDD+"
+        dataset, value_space_dict = read_data.read_dataset(dataset_key)
+        print("Training dataset loaded.")
+        intervals = read_data.calculate_intervals(dataset_key, dataset, value_space_dict)
+        print("Discrete intervals created.")
+        read_data.discretize_to_intervals(dataset, intervals)
+        print("Floats discretized to intervals.")
+
+        save_json_to_file(dataset, "saved_data/dataset.data")
+        save_json_to_file(value_space_dict, "saved_data/value_space.data")
+        save_json_to_file(intervals, "saved_data/intervals.data")
+
+    nodes = get_nodes(dataset)
+    edges = get_edges(nodes)
+    classes = get_classes(dataset)
+
+    #   Create MST GraphSkeleton with Kruskal's algorithm
+    information_edges = edges[:]
+    tan.calc_mutual_information(classes, value_space_dict, dataset, information_edges)
+    print("Mutual information between edges completed.")
+    # save_json_to_file(information_edges, "saved_data/information_edges.data")
+
+    #   Get MST (Maximum spanning tree)
+    mst = kruskals.kruskals(information_edges)
+    print("Created MST.")
+    tan.remove_weights(mst)
+    print("Removed weights from MST.")
+    tree = tan.make_directed(mst)
+    print("Converted undirected tree to directed tree.")
+    tan.add_c_node(tree, nodes)
+    print("Added class node")
+    #   We now have the TAN structure (but no weights)
+
+    end_time = time.time()
+    tot_time = end_time - start_time
+    print("Done executing. Total execution time: {}".format(tot_time))
 
 
 if __name__ == '__main__':

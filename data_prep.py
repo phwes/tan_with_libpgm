@@ -11,7 +11,7 @@ def cut_list(data_list, t):
                 return data_list[:i-1], data_list[i:]
         elif data_list[i][0] == t:
             bol_last_val = True
-    # print("Could not cut list! {}".format(t))
+    # print("Could not cut list: {} at value: {}".format(data_list, t))
     return data_list, []
 
 
@@ -68,17 +68,16 @@ def make_cut(s_list, cut_point):
 
 
 #   data_list = [[1.0, "class_1"], [0.5, "class_4"], [23.6, "class_2"] ...]
-#   Returns a list of cut sections [T1, T2, ..., Tn] representing the partitions:
-#   x <=T1, T1 < x <= T2 , ..., T(n-1) < x <= Tn, Tn< x
+#   Returns a list of cut sections [T1, T2, ...,Tn, -1] representing the partitions:
+#   x <=T1, T1 < x <= T2 , ..., T(n-1) < x <= Tn, Tn < x
 def mdlp(data_list):
-    data_list.sort()
+    data_list.sort(key=lambda x: float(x[0]))
     s_list = copy.deepcopy(data_list)
-
     cuts = []
     last_val = None
-    for data_point in data_list:
+    for data_point, i in zip(data_list, range(len(data_list))):
         #   No need to calculate the same cut again, nor can we make a cut on a list of length 1
-        if data_point[0] == last_val or len(s_list) == 1:
+        if data_point[0] == last_val or i == len(data_list)-1:
             continue
         #   Either make a cut, or add the data point to the upcoming cut
         if make_cut(s_list, data_point):
@@ -86,10 +85,7 @@ def mdlp(data_list):
             #   New S partition only contains the remaining data points
             _, s_list = cut_list(s_list, data_point[0])
         last_val = data_point[0]
-    #   Add the last cut that spans to infinity
-    cuts.append(s_list[len(s_list)-1][0])
+
+    #   Add the last partition that spans from last cut to infinity
+    cuts.append(-1)
     return cuts
-
-
-# mdlp([[1.0, "class_3"], [1.0, "class_3"], [3.0, "class_3"], [4.0, "class_3"], [4.0, "class_3"], [1.67, "class_3"],
-#       [1.3, "class_3"], [5.4, "class_2"], [7.4, "class_2"], [10.4, "class_2"], [25.4, "class_2"], [56.4, "class_2"]])
