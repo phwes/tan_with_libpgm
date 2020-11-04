@@ -262,9 +262,6 @@ def predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_d
     for c in score_c:
         if score_c[c] > most_likely[1]:
             most_likely = [c, score_c[c]]
-    print("Data_row: {}".format(data_row))
-    for c in score_c:
-        print("Score for {}: {}".format(c, score_c[c]))
     return most_likely[0]
 
 

@@ -78,8 +78,11 @@ def read_dataset(dataset_key):
                     value_space_dict['class'].append(data_row['class'])
                 dataset.append(data_row)
         return dataset, value_space_dict
-    elif dataset_key == "iris":
-        file_path = "res/iris_data/iris.data"
+    elif dataset_key == "iris_train" or dataset_key == "iris_test":
+        if dataset_key == "iris_train":
+            file_path = "res/iris_data/iris_train.data"
+        else:
+            file_path = "res/iris_data/iris_test.data"
         attr_names = ["sepal_length", "sepal_width", "petal_length", "petal_width", "class"]
         dataset = []
         value_space_dict = {'class' : []}

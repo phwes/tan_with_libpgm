@@ -91,7 +91,7 @@ def run_nsl_kdd():
     print("Calculated last probabilities for prediction.")
 
     #   Read test dataset
-    test_dataset, _ = read_data.read_dataset("KDD_train+")
+    test_dataset, _ = read_data.read_dataset("KDD_test+")
     read_data.discretize_to_intervals(test_dataset, intervals)
 
     #   Make prediction on test dataset
@@ -99,8 +99,9 @@ def run_nsl_kdd():
 
 
 def run_iris():
-    dataset_key = "iris"
-    dataset, value_space_dict = read_data.read_dataset(dataset_key)
+    train_dataset_key = "iris_train"
+    test_dataset_key = "iris_test"
+    dataset, value_space_dict = read_data.read_dataset(train_dataset_key)
     print("Training dataset loaded.")
     intervals = read_data.calculate_intervals("KDD_train+", dataset, value_space_dict)
     print("Discrete intervals created.")
@@ -133,7 +134,7 @@ def run_iris():
     print("Calculated last probabilities for prediction.")
 
     #   Read test dataset
-    test_dataset, _ = read_data.read_dataset(dataset_key)
+    test_dataset, _ = read_data.read_dataset(test_dataset_key)
     read_data.discretize_to_intervals(test_dataset, intervals)
 
     #   Make prediction on test dataset
