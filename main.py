@@ -98,10 +98,53 @@ def run_nsl_kdd():
     tan.predict_dataset(test_dataset, root_node)
 
 
+def run_iris():
+    dataset_key = "iris"
+    dataset, value_space_dict = read_data.read_dataset(dataset_key)
+    print("Training dataset loaded.")
+    intervals = read_data.calculate_intervals("KDD_train+", dataset, value_space_dict)
+    print("Discrete intervals created.")
+    read_data.discretize_to_intervals(dataset, intervals)
+    print("Floats discretized to intervals.")
+
+    nodes = get_nodes(dataset)
+    edges = get_edges(nodes)
+    classes = get_classes(dataset)
+
+    #   Create MST GraphSkeleton with Kruskal's algorithm
+    information_edges = edges[:]
+    tan.calc_mutual_information(classes, dataset, information_edges)
+    print("Mutual information between edges completed.")
+    # save_json_to_file(information_edges, "saved_data/information_edges.data")
+
+    #   Get MST (Maximum spanning tree)
+    mst = kruskals.kruskals(information_edges)
+    print("Created MST.")
+    tan.remove_weights(mst)
+    print("Removed weights from MST.")
+    tree, root_node, parent_of_dict = tan.make_directed(mst)
+    print("Converted undirected tree to directed tree.")
+    tan.add_c_node(tree, nodes)
+    print("Added class node.")
+    #   We now have the TAN structure (but no weights)
+
+    #   Calculate the probs needed for prediction
+    tan.calc_bayes_probs(dataset, parent_of_dict, root_node)
+    print("Calculated last probabilities for prediction.")
+
+    #   Read test dataset
+    test_dataset, _ = read_data.read_dataset(dataset_key)
+    read_data.discretize_to_intervals(test_dataset, intervals)
+
+    #   Make prediction on test dataset
+    tan.predict_dataset(test_dataset, root_node)
+
+
 def main():
     print("Begin execution.")
     start_time = time.time()
-    run_nsl_kdd()
+    # run_nsl_kdd()
+    run_iris()
     end_time = time.time()
     tot_time = end_time - start_time
     print("Done executing. Total execution time: {}".format(tot_time))
