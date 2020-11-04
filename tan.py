@@ -4,34 +4,21 @@ import os.path
 import random
 
 
-def save_probs(px, pxy, pxyc):
-    px_file = open("saved_data/px.data", "w")
-    json.dump(px, px_file)
-    px_file.close()
-    pxy_file = open("saved_data/pxy.data", "w")
-    json.dump(pxy, pxy_file)
-    pxy_file.close()
-    pxyc_file = open("saved_data/pxyc.data", "w")
-    json.dump(pxyc, pxyc_file)
-    pxyc_file.close()
+def save_json_to_file(data, file_path):
+    dump_file = open(file_path, "w")
+    json.dump(data, dump_file)
+    dump_file.close()
 
 
-def load_probs():
-    px_file = open("saved_data/px.data", "r")
-    px = json.load(px_file)
-    px_file.close()
-    pxy_file = open("saved_data/pxy.data", "r")
-    pxy = json.load(pxy_file)
-    pxy_file.close()
-    pxyc_file = open("saved_data/pxyc.data", "r")
-    pxyc = json.load(pxyc_file)
-    pxyc_file.close()
-    return px, pxy, pxyc
+def load_json_from_file(file_path):
+    dump_file = open(file_path, "r")
+    return json.load(dump_file)
 
 
 #   Calculates the mutual information between two nodes (attributes)
-def calc_mutual_information(classes, value_space_dict, dataset, information_edges):
+def calc_mutual_information(classes, dataset, information_edges):
     tot_sum = 0.0
+    pc = {}
     px = {}
     pxy = {}
     pxyc = {}
@@ -39,7 +26,10 @@ def calc_mutual_information(classes, value_space_dict, dataset, information_edge
     count_xy = {}
 
     if os.path.exists("saved_data/pxyc.data"):
-        px, pxy, pxyc = load_probs()
+        pc = load_json_from_file("saved_data/pc.data")
+        px = load_json_from_file("saved_data/px.data")
+        pxy = load_json_from_file("saved_data/pxy.data")
+        pxyc = load_json_from_file("saved_data/pxyc.data")
         print("Loaded probs from files")
     else:
         for c in classes:
@@ -70,6 +60,10 @@ def calc_mutual_information(classes, value_space_dict, dataset, information_edge
                         count_x[c][attr_name] = {}
                         count_x[c][attr_name][data_row[attr_name]] = 1
 
+        #   Calc P(c)
+        for c in count_class:
+            pc[c] = count_class[c]/len(dataset)
+
         #   Count combinations of attribute values
         for data_row in dataset:
             c = data_row["class"]
@@ -77,7 +71,7 @@ def calc_mutual_information(classes, value_space_dict, dataset, information_edge
                 if attr_name_x == "class":
                     continue
                 for (attr_name_y, index_y) in zip(data_row, range(len(data_row))):
-                    if attr_name_y == "class" or index_x > index_y:
+                    if attr_name_y == "class" or index_x >= index_y:
                         continue
                     if attr_name_x in count_xy[c].keys():
                         if attr_name_y in count_xy[c][attr_name_x].keys():
@@ -128,7 +122,10 @@ def calc_mutual_information(classes, value_space_dict, dataset, information_edge
                         for attr_val_y in count_xy[c][attr_name_x][attr_name_y][attr_val_x]:
                             pxy[c][attr_name_x][attr_name_y][attr_val_x][attr_val_y] = count_xy[c][attr_name_x][attr_name_y][attr_val_x][attr_val_y]/count_class[c]
                             pxyc[c][attr_name_x][attr_name_y][attr_val_x][attr_val_y] = count_xy[c][attr_name_x][attr_name_y][attr_val_x][attr_val_y]/len(dataset)
-        save_probs(px, pxy, pxyc)
+        save_json_to_file(pc, "saved_data/pc.data")
+        save_json_to_file(px, "saved_data/px.data")
+        save_json_to_file(pxy, "saved_data/pxy.data")
+        save_json_to_file(pxyc, "saved_data/pxyc.data")
         print ("Calculated and saved probs")
 
     #   Calculate the mutual information over each edge
@@ -156,7 +153,9 @@ def remove_weights(edges):
 #   Choose one random node and makes it root (every edge points out from that node). edge = [from_node, to_node]
 def make_directed(edges):
     root_index = random.randint(0, len(edges)-1)
-    next_node = [edges[root_index][0]]
+    root_node = edges[root_index][0]
+    parent_of_dict = {}
+    next_node = [root_node]
     directed_tree = []
     edges_to_remove = []
     while edges:
@@ -167,15 +166,20 @@ def make_directed(edges):
                 next_node.append(edge[1])
                 if edge not in edges_to_remove:
                     edges_to_remove.append(edge)
+                if edge[1] not in parent_of_dict:
+                    parent_of_dict[edge[1]] = edge[0]
             elif edge[1] == current_node:
                 directed_tree.append([edge[1], edge[0]])
                 next_node.append(edge[0])
                 if edge not in edges_to_remove:
                     edges_to_remove.append(edge)
+                if edge[0] not in parent_of_dict:
+                    parent_of_dict[edge[0]] = edge[1]
         for remove_edge in edges_to_remove:
             edges.remove(remove_edge)
         edges_to_remove = []
-    return directed_tree
+        save_json_to_file(parent_of_dict, "saved_data/parent_of_dict.data")
+    return directed_tree, root_node, parent_of_dict
 
 
 def add_c_node(edges, nodes):
@@ -184,5 +188,95 @@ def add_c_node(edges, nodes):
             edges.append(["class", node])
 
 
+def calc_bayes_probs(dataset, parent_of_dict, root_node):
+    count_given_parent_c = {}
+    px_given_parent_c = {}
+
+    #   Count the occurrences with parent-child values
+    for data_row in dataset:
+        c = data_row["class"]
+        if c not in count_given_parent_c:
+            count_given_parent_c[c] = {}
+        for child_name in data_row:
+            if child_name == root_node or child_name == "class":
+                continue
+            child_value = data_row[child_name]
+            parent_name = parent_of_dict[child_name]
+            parent_value = data_row[parent_name]
+            if parent_name not in count_given_parent_c[c]:
+                count_given_parent_c[c][parent_name] = {}
+            if child_name not in count_given_parent_c[c][parent_name]:
+                count_given_parent_c[c][parent_name][child_name] = {}
+            if parent_value not in count_given_parent_c[c][parent_name][child_name]:
+                count_given_parent_c[c][parent_name][child_name][parent_value] = {}
+            if child_value not in count_given_parent_c[c][parent_name][child_name][parent_value]:
+                count_given_parent_c[c][parent_name][child_name][parent_value][child_value] = 1
+            else:
+                count_given_parent_c[c][parent_name][child_name][parent_value][child_value] += 1
+
+    #   Calculate the probabilities P(x|c,Pa(x))
+    for c in count_given_parent_c:
+        for parent_name in count_given_parent_c[c]:
+            for child_name in count_given_parent_c[c][parent_name]:
+                for parent_value in count_given_parent_c[c][parent_name][child_name]:
+                    child_sum = 0
+                    for child_value in count_given_parent_c[c][parent_name][child_name][parent_value]:
+                        child_sum += count_given_parent_c[c][parent_name][child_name][parent_value][child_value]
+                    for child_value in count_given_parent_c[c][parent_name][child_name][parent_value]:
+                        if c not in px_given_parent_c:
+                            px_given_parent_c[c] = {}
+                        if child_name not in px_given_parent_c[c]:
+                            px_given_parent_c[c][child_name] = {}
+                        if parent_value not in px_given_parent_c[c][child_name]:
+                            px_given_parent_c[c][child_name][parent_value] = {}
+                        px_given_parent_c[c][child_name][parent_value][child_value] = \
+                            count_given_parent_c[c][parent_name][child_name][parent_value][child_value] / child_sum
+    save_json_to_file(px_given_parent_c, "saved_data/px_given_parent_c.data")
+
+
+#   Make a prediction on a single data row
+def predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict):
+    minimum_prob = 0.1
+    score_c = {}
+    for c in px:
+        if root_node not in px[c]:
+            score_c[c] = minimum_prob
+        elif data_row[root_node] not in px[c][root_node]:
+            score_c[c] = minimum_prob
+        else:
+            score_c[c] = pc[c]*px[c][root_node][data_row[root_node]]
+        for child_name in data_row:
+            if child_name == root_node or child_name == "class":
+                continue
+            else:
+                parent_name = parent_of_dict[child_name]
+                parent_value = data_row[parent_name]
+                child_value = data_row[child_name]
+                if child_name not in px_given_parent_c[c]:
+                    score_c[c] = score_c[c]*minimum_prob
+                elif parent_value not in px_given_parent_c[c][child_name]:
+                    score_c[c] = score_c[c] * minimum_prob
+                elif child_value not in px_given_parent_c[c][child_name][parent_value]:
+                    score_c[c] = score_c[c] * minimum_prob
+                else:
+                    score_c[c] = score_c[c]*px_given_parent_c[c][child_name][parent_value][child_value]
+    most_likely = [None, 0.0]
+    for c in score_c:
+        if score_c[c] > most_likely[1]:
+            most_likely = [c, score_c[c]]
+    return most_likely[0]
+
+
+def predict_dataset(test_dataset, root_node):
+    pc = load_json_from_file("saved_data/pc.data")
+    px = load_json_from_file("saved_data/px.data")
+    px_given_parent_c = load_json_from_file("saved_data/px_given_parent_c.data")
+    parent_of_dict = load_json_from_file("saved_data/parent_of_dict.data")
+    count_correct = 0
+    for data_row in test_dataset:
+        prediction = predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict)
+        if prediction == data_row["class"]:
+            count_correct += 1
+    print("Score: {} out of {}".format(count_correct, len(test_dataset)))
 
 

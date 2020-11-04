@@ -56,7 +56,7 @@ def main():
         intervals = load_json_from_file("saved_data/intervals.data")
         print("Dataset, value space and intervals loaded from files")
     else:
-        dataset_key = "KDD+"
+        dataset_key = "KDD_train+"
         dataset, value_space_dict = read_data.read_dataset(dataset_key)
         print("Training dataset loaded.")
         intervals = read_data.calculate_intervals(dataset_key, dataset, value_space_dict)
@@ -74,7 +74,7 @@ def main():
 
     #   Create MST GraphSkeleton with Kruskal's algorithm
     information_edges = edges[:]
-    tan.calc_mutual_information(classes, value_space_dict, dataset, information_edges)
+    tan.calc_mutual_information(classes, dataset, information_edges)
     print("Mutual information between edges completed.")
     # save_json_to_file(information_edges, "saved_data/information_edges.data")
 
@@ -83,11 +83,24 @@ def main():
     print("Created MST.")
     tan.remove_weights(mst)
     print("Removed weights from MST.")
-    tree = tan.make_directed(mst)
+    tree, root_node, parent_of_dict = tan.make_directed(mst)
     print("Converted undirected tree to directed tree.")
     tan.add_c_node(tree, nodes)
-    print("Added class node")
+    print("Added class node.")
     #   We now have the TAN structure (but no weights)
+
+    #   Calculate the probs needed for prediction
+    tan.calc_bayes_probs(dataset, parent_of_dict, root_node)
+    print("Calculated last probabilities for prediction.")
+
+    #   Read test dataset
+    test_dataset, _ = read_data.read_dataset("KDD_test+")
+    read_data.discretize_to_intervals(test_dataset, intervals)
+
+    #   Make prediction on test dataset
+    tan.predict_dataset(test_dataset, root_node)
+
+
 
     end_time = time.time()
     tot_time = end_time - start_time
