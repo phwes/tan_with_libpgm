@@ -236,12 +236,10 @@ def calc_bayes_probs(dataset, parent_of_dict, root_node):
 
 #   Make a prediction on a single data row
 def predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict):
-    minimum_prob = 0.1
+    minimum_prob = 0.001
     score_c = {}
     for c in px:
-        if root_node not in px[c]:
-            score_c[c] = minimum_prob
-        elif data_row[root_node] not in px[c][root_node]:
+        if data_row[root_node] not in px[c][root_node]:
             score_c[c] = minimum_prob
         else:
             score_c[c] = pc[c]*px[c][root_node][data_row[root_node]]
@@ -273,10 +271,22 @@ def predict_dataset(test_dataset, root_node):
     px_given_parent_c = load_json_from_file("saved_data/px_given_parent_c.data")
     parent_of_dict = load_json_from_file("saved_data/parent_of_dict.data")
     count_correct = 0
+    correct_in_class = {}
+    incorrect_in_class = {}
     for data_row in test_dataset:
         prediction = predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict)
         if prediction == data_row["class"]:
             count_correct += 1
+            if prediction not in correct_in_class:
+                correct_in_class[prediction] = 0
+            correct_in_class[prediction] += 1
+        else:
+            if data_row["class"] not in incorrect_in_class:
+                incorrect_in_class[data_row["class"]] = 0
+            incorrect_in_class[data_row["class"]] += 1
     print("Score: {} out of {}".format(count_correct, len(test_dataset)))
-
+    for c in correct_in_class:
+        print("Num correct of classification {}: {}".format(c, correct_in_class[c]))
+    for c in incorrect_in_class:
+        print("Num missed classifications in {}: {}".format(c, incorrect_in_class[c]))
 

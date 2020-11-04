@@ -46,10 +46,7 @@ def load_json_from_file(file_path):
     return json.load(dump_file)
 
 
-def main():
-    print("Begin execution.")
-    start_time = time.time()
-
+def run_nsl_kdd():
     if os.path.exists("saved_data/dataset.data") and os.path.exists("saved_data/value_space.data") and os.path.exists("saved_data/intervals.data"):
         dataset = load_json_from_file("saved_data/dataset.data")
         value_space_dict = load_json_from_file("saved_data/value_space.data")
@@ -94,14 +91,17 @@ def main():
     print("Calculated last probabilities for prediction.")
 
     #   Read test dataset
-    test_dataset, _ = read_data.read_dataset("KDD_test+")
+    test_dataset, _ = read_data.read_dataset("KDD_train+")
     read_data.discretize_to_intervals(test_dataset, intervals)
 
     #   Make prediction on test dataset
     tan.predict_dataset(test_dataset, root_node)
 
 
-
+def main():
+    print("Begin execution.")
+    start_time = time.time()
+    run_nsl_kdd()
     end_time = time.time()
     tot_time = end_time - start_time
     print("Done executing. Total execution time: {}".format(tot_time))
