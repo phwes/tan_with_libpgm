@@ -47,16 +47,17 @@ def load_json_from_file(file_path):
 
 
 def run_nsl_kdd():
+    train_dataset_key = "KDD_train+"
+    test_dataset_key = "KDD_test+"
     if os.path.exists("saved_data/dataset.data") and os.path.exists("saved_data/value_space.data") and os.path.exists("saved_data/intervals.data"):
         dataset = load_json_from_file("saved_data/dataset.data")
         value_space_dict = load_json_from_file("saved_data/value_space.data")
         intervals = load_json_from_file("saved_data/intervals.data")
         print("Dataset, value space and intervals loaded from files")
     else:
-        dataset_key = "KDD_train+"
-        dataset, value_space_dict = read_data.read_dataset(dataset_key)
+        dataset, value_space_dict = read_data.read_dataset(train_dataset_key)
         print("Training dataset loaded.")
-        intervals = read_data.calculate_intervals(dataset_key, dataset, value_space_dict)
+        intervals = read_data.calculate_intervals(train_dataset_key, dataset, value_space_dict)
         print("Discrete intervals created.")
         read_data.discretize_to_intervals(dataset, intervals)
         print("Floats discretized to intervals.")
@@ -90,12 +91,18 @@ def run_nsl_kdd():
     tan.calc_bayes_probs(dataset, parent_of_dict, root_node)
     print("Calculated last probabilities for prediction.")
 
+    subset = []
+    for data_row in dataset:
+        if data_row["class"] == "dos" and data_row["duration"] == "1.0":
+        # if data_row["class"] == "dos":
+            print(data_row)
+
     #   Read test dataset
-    test_dataset, _ = read_data.read_dataset("KDD_test+")
+    test_dataset, _ = read_data.read_dataset(test_dataset_key)
     read_data.discretize_to_intervals(test_dataset, intervals)
 
     #   Make prediction on test dataset
-    tan.predict_dataset(test_dataset, root_node)
+    tan.predict_dataset(test_dataset, root_node, classes)
 
 
 def run_iris():
@@ -144,8 +151,8 @@ def run_iris():
 def main():
     print("Begin execution.")
     start_time = time.time()
-    # run_nsl_kdd()
-    run_iris()
+    run_nsl_kdd()
+    # run_iris()
     end_time = time.time()
     tot_time = end_time - start_time
     print("Done executing. Total execution time: {}".format(tot_time))

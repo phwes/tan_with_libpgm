@@ -236,7 +236,7 @@ def calc_bayes_probs(dataset, parent_of_dict, root_node):
 
 #   Make a prediction on a single data row
 def predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict):
-    minimum_prob = 0.001
+    minimum_prob = 0.00001
     score_c = {}
     for c in px:
         if data_row[root_node] not in px[c][root_node]:
@@ -250,9 +250,7 @@ def predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_d
                 parent_name = parent_of_dict[child_name]
                 parent_value = data_row[parent_name]
                 child_value = data_row[child_name]
-                if child_name not in px_given_parent_c[c]:
-                    score_c[c] = score_c[c]*minimum_prob
-                elif parent_value not in px_given_parent_c[c][child_name]:
+                if parent_value not in px_given_parent_c[c][child_name]:
                     score_c[c] = score_c[c] * minimum_prob
                 elif child_value not in px_given_parent_c[c][child_name][parent_value]:
                     score_c[c] = score_c[c] * minimum_prob
@@ -265,28 +263,45 @@ def predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_d
     return most_likely[0]
 
 
-def predict_dataset(test_dataset, root_node):
+def predict_dataset(test_dataset, root_node, classes):
     pc = load_json_from_file("saved_data/pc.data")
     px = load_json_from_file("saved_data/px.data")
     px_given_parent_c = load_json_from_file("saved_data/px_given_parent_c.data")
     parent_of_dict = load_json_from_file("saved_data/parent_of_dict.data")
-    count_correct = 0
-    correct_in_class = {}
-    incorrect_in_class = {}
+    #   Dictionary with entries [num_correct, num_incorrect]
+    count_correct_dict = {}
+    tot_correct = 0
+    tot_wrong = 0
+    false_positives = 0
+
     for data_row in test_dataset:
         prediction = predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict)
-        if prediction == data_row["class"]:
-            count_correct += 1
-            if prediction not in correct_in_class:
-                correct_in_class[prediction] = 0
-            correct_in_class[prediction] += 1
+        #   Add entry in dict, if not exists
+        if data_row['class'] not in count_correct_dict:
+            count_correct_dict[data_row['class']] = [0, 0]
+        #   Count if correct or not
+        if data_row['class'] == prediction:
+            count_correct_dict[data_row['class']][0] += 1
+            tot_correct += 1
         else:
-            if data_row["class"] not in incorrect_in_class:
-                incorrect_in_class[data_row["class"]] = 0
-            incorrect_in_class[data_row["class"]] += 1
-    print("Score: {} out of {}".format(count_correct, len(test_dataset)))
-    for c in correct_in_class:
-        print("Num correct of classification {}: {}".format(c, correct_in_class[c]))
-    for c in incorrect_in_class:
-        print("Num missed classifications in {}: {}".format(c, incorrect_in_class[c]))
+            count_correct_dict[data_row['class']][1] += 1
+            tot_wrong += 1
+        #   Count if false positive
+        if data_row['class'] == "normal" and prediction != "normal":
+            false_positives += 1
+
+    #   Calculate the accuracy in each classification
+    for c in count_correct_dict:
+        num_correct = count_correct_dict[c][0]
+        num_wrong = count_correct_dict[c][1]
+        tot_num = num_correct + num_wrong
+        accuracy = num_correct/tot_num
+        count_correct_dict[c].append(accuracy)
+        print("Classification: {}, Accuracy: {}, Total number of entries: {}".format(c, accuracy, tot_num))
+        print ("Num_Correct: {}, Num_Miss: {}".format(num_correct, num_wrong))
+
+    print("Number of false positives: {}".format(false_positives))
+    print("Overall accuracy: {}, Tot_correct: {}, Tot_wrong: {}".format(tot_correct/len(test_dataset), tot_correct, tot_wrong))
+    print("Tot number of entries: {}".format(len(test_dataset)))
+
 

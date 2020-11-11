@@ -1,11 +1,12 @@
 import data_prep
 
+
 def read_dataset(dataset_key):
     if dataset_key == "KDD_train+" or dataset_key == "KDD_test+":
         if dataset_key == "KDD_train+":
-            file_path = "res/NSL-KDD/KDDTrain+.txt"
+            file_path = "res/mod_NSL/KDDTrain+.txt"
         else:
-            file_path = "res/NSL-KDD/KDDTest+.txt"
+            file_path = "res/mod_NSL/KDDTrain+.txt"
         dataset = []
         attr_names = [
             'duration',
