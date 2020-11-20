@@ -46,9 +46,11 @@ def load_json_from_file(file_path):
     return json.load(dump_file)
 
 
-def run_nsl_kdd():
-    train_dataset_key = "KDD_train+"
-    test_dataset_key = "KDD_test+"
+def run_tan():
+    # train_dataset_key = "KDD_train+"
+    # test_dataset_key = "KDD_test+"
+    train_dataset_key = "NB15_train"
+    test_dataset_key = "NB15_test"
     if os.path.exists("saved_data/dataset.data") and os.path.exists("saved_data/value_space.data") and os.path.exists("saved_data/intervals.data"):
         dataset = load_json_from_file("saved_data/dataset.data")
         value_space_dict = load_json_from_file("saved_data/value_space.data")
@@ -58,13 +60,13 @@ def run_nsl_kdd():
         dataset, value_space_dict = read_data.read_dataset(train_dataset_key)
         print("Training dataset loaded.")
         intervals = read_data.calculate_intervals(train_dataset_key, dataset, value_space_dict)
+        save_json_to_file(intervals, "saved_data/intervals.data")
         print("Discrete intervals created.")
         read_data.discretize_to_intervals(dataset, intervals)
         print("Floats discretized to intervals.")
 
-        save_json_to_file(dataset, "saved_data/dataset.data")
         save_json_to_file(value_space_dict, "saved_data/value_space.data")
-        save_json_to_file(intervals, "saved_data/intervals.data")
+        save_json_to_file(dataset, "saved_data/dataset.data")
 
     nodes = get_nodes(dataset)
     edges = get_edges(nodes)
@@ -91,11 +93,10 @@ def run_nsl_kdd():
     tan.calc_bayes_probs(dataset, parent_of_dict, root_node)
     print("Calculated last probabilities for prediction.")
 
-    subset = []
-    for data_row in dataset:
-        if data_row["class"] == "dos" and data_row["duration"] == "1.0":
-        # if data_row["class"] == "dos":
-            print(data_row)
+    # for data_row in dataset:
+    #     if data_row["class"] == "dos" and data_row["duration"] == "1.0":
+    #     # if data_row["class"] == "dos":
+    #         print(data_row)
 
     #   Read test dataset
     test_dataset, _ = read_data.read_dataset(test_dataset_key)
@@ -151,7 +152,7 @@ def run_iris():
 def main():
     print("Begin execution.")
     start_time = time.time()
-    run_nsl_kdd()
+    run_tan()
     # run_iris()
     end_time = time.time()
     tot_time = end_time - start_time

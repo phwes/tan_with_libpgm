@@ -6,7 +6,7 @@ def read_dataset(dataset_key):
         if dataset_key == "KDD_train+":
             file_path = "res/mod_NSL/KDDTrain+.txt"
         else:
-            file_path = "res/mod_NSL/KDDTrain+.txt"
+            file_path = "res/mod_NSL/KDDTest-21.txt"
         dataset = []
         attr_names = [
             'duration',
@@ -101,19 +101,53 @@ def read_dataset(dataset_key):
                     value_space_dict['class'].append(data_row['class'])
                 dataset.append(data_row)
         return dataset, value_space_dict
+    elif dataset_key == "NB15_train" or dataset_key == "NB15_test":
+        if dataset_key == "NB15_train":
+            file_path = "res/UNSW-NB15/UNSW_NB15_training-set.csv"
+        else:
+            file_path = "res/UNSW-NB15/UNSW_NB15_testing-set.csv"
+        attr_names = ["dur","proto","service","state","spkts","dpkts","sbytes","dbytes","rate","sttl","dttl","sload","dload","sloss","dloss","sinpkt","dinpkt","sjit","djit","swin","stcpb","dtcpb","dwin","tcprtt","synack","ackdat","smean","dmean","trans_depth","response_body_len","ct_srv_src","ct_state_ttl","ct_dst_ltm","ct_src_dport_ltm","ct_dst_sport_ltm","ct_dst_src_ltm","is_ftp_login","ct_ftp_cmd","ct_flw_http_mthd","ct_src_ltm","ct_srv_dst","is_sm_ips_ports","class"]
+        dataset = []
+        value_space_dict = {'class' : []}
+        line_num = 0
+        with open(file_path, 'r') as file:
+            for line in file:
+                if line_num == 0:
+                    line_num += 1
+                    continue
+                if len(line) < 4:
+                    continue
+                attribute_values = line.split(',')
+                #   Remove the "id" attribute and the label
+                attribute_values.pop(0)
+                attribute_values.pop(len(attribute_values)-1)
+                #   Remove "\n" at the last attribute
+                attribute_values[len(attribute_values) - 1] = attribute_values[len(attribute_values) - 1][:len(attribute_values[len(attribute_values) - 1]) - 1]
+                #   Make all the numbers to floats
+                attribute_values[0] = float(attribute_values[0])
+                for index in range(4, len(attribute_values)-2):
+                    attribute_values[index] = float(attribute_values[index])
+                data_row = dict(zip(attr_names, attribute_values))
+                if data_row['class'] not in value_space_dict['class']:
+                    value_space_dict['class'].append(data_row['class'])
+                dataset.append(data_row)
+        return dataset, value_space_dict
 
 
 def calculate_intervals(dataset_key, dataset, value_space_dict):
-    if dataset_key == "KDD_train+":
+    if dataset_key == "KDD_train+" or dataset_key == "NB15_train":
+        print("Interval calculations has begun.")
         float_attr = {}
         #   Initiate lists for float attributes
         for attr in dataset[0]:
             if isinstance(dataset[0][attr], float):
                 float_attr[attr] = []
+        print("Floats initiated.")
         #   Parse all float values to lists
         for data_row in dataset:
             for attr in float_attr:
                 float_attr[attr].append([data_row[attr], data_row['class']])
+        print("Floats parsed to lists")
         #   Calculate the interval cuts
         interval_cuts = {}
         count_finished_attr = 0
@@ -123,6 +157,8 @@ def calculate_intervals(dataset_key, dataset, value_space_dict):
             count_finished_attr += 1
             print("Calculate intervals status: {} of {} attribute intervals created.".format(count_finished_attr, len(float_attr)))
         return interval_cuts
+    else:
+        print("Error: Unkown dataset key {} for interval calculation.".format(dataset_key))
 
 
 def find_interval_value(data_value, interval_cuts):

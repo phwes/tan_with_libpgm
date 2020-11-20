@@ -236,7 +236,7 @@ def calc_bayes_probs(dataset, parent_of_dict, root_node):
 
 #   Make a prediction on a single data row
 def predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict):
-    minimum_prob = 0.00001
+    minimum_prob = 0.0001
     score_c = {}
     for c in px:
         if data_row[root_node] not in px[c][root_node]:
