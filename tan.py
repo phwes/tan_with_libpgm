@@ -62,7 +62,7 @@ def calc_mutual_information(classes, dataset, information_edges):
 
         #   Calc P(c)
         for c in count_class:
-            pc[c] = count_class[c]/len(dataset)
+            pc[c] = count_class[c] / len(dataset)
 
         #   Count combinations of attribute values
         for data_row in dataset:
@@ -76,13 +76,17 @@ def calc_mutual_information(classes, dataset, information_edges):
                     if attr_name_x in count_xy[c].keys():
                         if attr_name_y in count_xy[c][attr_name_x].keys():
                             if data_row[attr_name_x] in count_xy[c][attr_name_x][attr_name_y].keys():
-                                if data_row[attr_name_y] in count_xy[c][attr_name_x][attr_name_y][data_row[attr_name_x]].keys():
-                                    count_xy[c][attr_name_x][attr_name_y][data_row[attr_name_x]][data_row[attr_name_y]] += 1.0
+                                if data_row[attr_name_y] in count_xy[c][attr_name_x][attr_name_y][
+                                    data_row[attr_name_x]].keys():
+                                    count_xy[c][attr_name_x][attr_name_y][data_row[attr_name_x]][
+                                        data_row[attr_name_y]] += 1.0
                                 else:
-                                    count_xy[c][attr_name_x][attr_name_y][data_row[attr_name_x]][data_row[attr_name_y]] = 1.0
+                                    count_xy[c][attr_name_x][attr_name_y][data_row[attr_name_x]][
+                                        data_row[attr_name_y]] = 1.0
                             else:
                                 count_xy[c][attr_name_x][attr_name_y][data_row[attr_name_x]] = {}
-                                count_xy[c][attr_name_x][attr_name_y][data_row[attr_name_x]][data_row[attr_name_y]] = 1.0
+                                count_xy[c][attr_name_x][attr_name_y][data_row[attr_name_x]][
+                                    data_row[attr_name_y]] = 1.0
                         else:
                             count_xy[c][attr_name_x][attr_name_y] = {}
                             count_xy[c][attr_name_x][attr_name_y][data_row[attr_name_x]] = {}
@@ -120,8 +124,35 @@ def calc_mutual_information(classes, dataset, information_edges):
                         pxy[c][attr_name_x][attr_name_y][attr_val_x] = {}
                         pxyc[c][attr_name_x][attr_name_y][attr_val_x] = {}
                         for attr_val_y in count_xy[c][attr_name_x][attr_name_y][attr_val_x]:
-                            pxy[c][attr_name_x][attr_name_y][attr_val_x][attr_val_y] = count_xy[c][attr_name_x][attr_name_y][attr_val_x][attr_val_y]/count_class[c]
-                            pxyc[c][attr_name_x][attr_name_y][attr_val_x][attr_val_y] = count_xy[c][attr_name_x][attr_name_y][attr_val_x][attr_val_y]/len(dataset)
+                            pxy[c][attr_name_x][attr_name_y][attr_val_x][attr_val_y] = \
+                            count_xy[c][attr_name_x][attr_name_y][attr_val_x][attr_val_y] / count_class[c]
+                            pxyc[c][attr_name_x][attr_name_y][attr_val_x][attr_val_y] = \
+                            count_xy[c][attr_name_x][attr_name_y][attr_val_x][attr_val_y] / len(dataset)
+
+        #   Calculate the prior estimate
+        prior_estimates = {}
+        count_attr_total = {}
+        count_attr_val_total = {}
+        for c in count_x:
+            for attr_name in px[c]:
+                if attr_name not in prior_estimates:
+                    count_attr_total[attr_name] = 0
+                    count_attr_val_total[attr_name] = {}
+                    for attr_val in count_x[c][attr_name]:
+                        count_attr_total[attr_name] += count_x[c][attr_name][attr_val]
+                        if attr_val not in count_attr_val_total[attr_name]:
+                            count_attr_val_total[attr_name][attr_val] = count_x[c][attr_name][attr_val]
+                        else:
+                            count_attr_val_total[attr_name][attr_val] += count_x[c][attr_name][attr_val]
+        for attr_name in count_attr_val_total:
+            if attr_name not in prior_estimates:
+                prior_estimates[attr_name] = {}
+            for attr_val in count_attr_val_total[attr_name]:
+                tot_val_tmp = count_attr_val_total[attr_name][attr_val]
+                tot_attr_tmp = count_attr_total[attr_name]
+                prior_estimates[attr_name][attr_val] = tot_val_tmp / tot_attr_tmp
+
+        save_json_to_file(prior_estimates, "saved_data/prior_estimates.data")
         save_json_to_file(pc, "saved_data/pc.data")
         save_json_to_file(px, "saved_data/px.data")
         save_json_to_file(pxy, "saved_data/pxy.data")
@@ -140,7 +171,7 @@ def calc_mutual_information(classes, dataset, information_edges):
                     pxy_val = pxy[c][attr_name_x][attr_name_y][attr_val_x][attr_val_y]
                     px_val = px[c][attr_name_x][attr_val_x]
                     py_val = px[c][attr_name_y][attr_val_y]
-                    mutual_information += pxyc_val * math.log2(pxy_val/(px_val * py_val))
+                    mutual_information += pxyc_val * math.log2(pxy_val / (px_val * py_val))
         edge.append(mutual_information)
 
 
@@ -152,7 +183,7 @@ def remove_weights(edges):
 
 #   Choose one random node and makes it root (every edge points out from that node). edge = [from_node, to_node]
 def make_directed(edges):
-    root_index = random.randint(0, len(edges)-1)
+    root_index = random.randint(0, len(edges) - 1)
     root_node = edges[root_index][0]
     parent_of_dict = {}
     next_node = [root_node]
@@ -234,15 +265,70 @@ def calc_bayes_probs(dataset, parent_of_dict, root_node):
     save_json_to_file(px_given_parent_c, "saved_data/px_given_parent_c.data")
 
 
+def smooth_prediction(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict, prior_estimates_dict, data_len):
+    n_0 = 5  # Same value as in TAN report
+    n = data_len
+    prob_value = {}
+    min_val = 0.0001
+    for c in px:
+        prob_value[c] = 1
+        for attr_name in data_row:
+            if attr_name == 'class':
+                continue
+            elif attr_name == root_node:
+                attr_value = data_row[attr_name]
+                if attr_value not in prior_estimates_dict[attr_name]:
+                    prior_estimate = min_val
+                else:
+                    prior_estimate = prior_estimates_dict[attr_name][attr_value]
+                prob_parents = pc[c]
+                if attr_value not in px[c][attr_name]:
+                    term_one = min_val
+                else:
+                    term_one = (n * prob_parents) / (n * prob_parents + n_0) * \
+                           px[c][attr_name][attr_value]
+                term_two = n_0 / (n * prob_parents + n_0) * prior_estimate
+                sum = term_one + term_two
+                prob_value[c] *= sum
+            else:
+                parent_name = parent_of_dict[attr_name]
+                parent_value = data_row[parent_name]
+                attr_value = data_row[attr_name]
+                if attr_value not in prior_estimates_dict[attr_name]:
+                    prior_estimate = min_val
+                else:
+                    prior_estimate = prior_estimates_dict[attr_name][attr_value]
+                if parent_value not in px[c][parent_name]:
+                    prob_parents = min_val
+                else:
+                    prob_parents = px[c][parent_name][parent_value]*pc[c]
+                if parent_value not in px_given_parent_c[c][attr_name]:
+                    term_one = min_val
+                elif attr_value not in px_given_parent_c[c][attr_name][parent_value]:
+                    term_one = min_val
+                else:
+                    term_one = (n*prob_parents)/(n*prob_parents+n_0)*px_given_parent_c[c][attr_name][parent_value][attr_value]
+                term_two = n_0/(n*prob_parents+n_0)*prior_estimate
+                sum = term_one + term_two
+                prob_value[c] *= sum
+    max_prob = 0.0
+    prediction = None
+    for c in prob_value:
+        if prob_value[c] > max_prob:
+            max_prob = prob_value[c]
+            prediction = c
+    return prediction
+
+
 #   Make a prediction on a single data row
 def predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict):
-    minimum_prob = 0.0001
+    minimum_prob = 0.0
     score_c = {}
     for c in px:
         if data_row[root_node] not in px[c][root_node]:
             score_c[c] = minimum_prob
         else:
-            score_c[c] = pc[c]*px[c][root_node][data_row[root_node]]
+            score_c[c] = pc[c] * px[c][root_node][data_row[root_node]]
         for child_name in data_row:
             if child_name == root_node or child_name == "class":
                 continue
@@ -255,7 +341,7 @@ def predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_d
                 elif child_value not in px_given_parent_c[c][child_name][parent_value]:
                     score_c[c] = score_c[c] * minimum_prob
                 else:
-                    score_c[c] = score_c[c]*px_given_parent_c[c][child_name][parent_value][child_value]
+                    score_c[c] = score_c[c] * px_given_parent_c[c][child_name][parent_value][child_value]
     most_likely = [None, 0.0]
     for c in score_c:
         if score_c[c] > most_likely[1]:
@@ -268,6 +354,7 @@ def predict_dataset(test_dataset, root_node, classes):
     px = load_json_from_file("saved_data/px.data")
     px_given_parent_c = load_json_from_file("saved_data/px_given_parent_c.data")
     parent_of_dict = load_json_from_file("saved_data/parent_of_dict.data")
+    prior_estimates = load_json_from_file("saved_data/prior_estimates.data")
     #   Dictionary with entries [num_correct, num_incorrect]
     count_correct_dict = {}
     tot_correct = 0
@@ -275,7 +362,8 @@ def predict_dataset(test_dataset, root_node, classes):
     false_positives = 0
 
     for data_row in test_dataset:
-        prediction = predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict)
+        # prediction = predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict)
+        prediction = smooth_prediction(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict, prior_estimates, len(test_dataset))
         #   Add entry in dict, if not exists
         if data_row['class'] not in count_correct_dict:
             count_correct_dict[data_row['class']] = [0, 0]
@@ -287,7 +375,8 @@ def predict_dataset(test_dataset, root_node, classes):
             count_correct_dict[data_row['class']][1] += 1
             tot_wrong += 1
         #   Count if false positive
-        if (data_row['class'] == "0" and prediction != "0") or (data_row['class'] == "Normal" and prediction != "Normal"):
+        if (data_row['class'] == "0" and prediction != "0") or (
+                data_row['class'] == "Normal" and prediction != "Normal"):
             false_positives += 1
 
     #   Calculate the accuracy in each classification
@@ -295,13 +384,12 @@ def predict_dataset(test_dataset, root_node, classes):
         num_correct = count_correct_dict[c][0]
         num_wrong = count_correct_dict[c][1]
         tot_num = num_correct + num_wrong
-        accuracy = num_correct/tot_num
+        accuracy = num_correct / tot_num
         count_correct_dict[c].append(accuracy)
         print("Classification: {}, Accuracy: {}, Total number of entries: {}".format(c, accuracy, tot_num))
         print ("Num_Correct: {}, Num_Miss: {}".format(num_correct, num_wrong))
 
     print("Number of false positives: {}".format(false_positives))
-    print("Overall accuracy: {}, Tot_correct: {}, Tot_wrong: {}".format(tot_correct/len(test_dataset), tot_correct, tot_wrong))
+    print("Overall accuracy: {}, Tot_correct: {}, Tot_wrong: {}".format(tot_correct / len(test_dataset), tot_correct,
+                                                                        tot_wrong))
     print("Tot number of entries: {}".format(len(test_dataset)))
-
-

@@ -4,9 +4,9 @@ import data_prep
 def read_dataset(dataset_key):
     if dataset_key == "KDD_train+" or dataset_key == "KDD_test+":
         if dataset_key == "KDD_train+":
-            file_path = "res/mod_NSL/KDDTrain+.txt"
+            file_path = "res/mod_NSL/KDDTrain+_20Percent.txt"
         else:
-            file_path = "res/mod_NSL/KDDTest-21.txt"
+            file_path = "res/mod_NSL/KDDTest+.txt"
         dataset = []
         attr_names = [
             'duration',
@@ -63,7 +63,7 @@ def read_dataset(dataset_key):
                                         'sunrpc', 'supdup', 'systat', 'telnet', 'tftp_u', 'tim_i', 'time', 'urh_i',
                                         'urp_i', 'uucp', 'uucp_path', 'vmnet', 'whois', 'X11', 'Z39_50'],
                             'flag': ['OTH', 'REJ', 'RSTO', 'RSTOS0', 'RSTR', 'S0', 'S1', 'S2', 'S3', 'SF', 'SH'],
-                            'class': []}
+                            'class': ["normal", "intrusion"]}
         with open(file_path, 'r') as file:
             for line in file:
                 attribute_values = line.split(',')
@@ -75,8 +75,8 @@ def read_dataset(dataset_key):
                 for index in range(4, 41):
                     attribute_values[index] = float(attribute_values[index])
                 data_row = dict(zip(attr_names, attribute_values))
-                if data_row['class'] not in value_space_dict['class']:
-                    value_space_dict['class'].append(data_row['class'])
+                if data_row['class'] != "normal":
+                    data_row['class'] = "intrusion"
                 dataset.append(data_row)
         return dataset, value_space_dict
     elif dataset_key == "iris_train" or dataset_key == "iris_test":
@@ -120,7 +120,7 @@ def read_dataset(dataset_key):
                 attribute_values = line.split(',')
                 #   Remove the "id" attribute and the attack_type
                 attribute_values.pop(0)
-                attribute_values.pop(len(attribute_values)-2)
+                attribute_values.pop(len(attribute_values)-1)
                 #   Remove "\n" at the last attribute
                 attribute_values[len(attribute_values) - 1] = attribute_values[len(attribute_values) - 1][:len(attribute_values[len(attribute_values) - 1]) - 1]
                 #   Make all the numbers to floats

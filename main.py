@@ -47,10 +47,10 @@ def load_json_from_file(file_path):
 
 
 def run_tan():
-    # train_dataset_key = "KDD_train+"
-    # test_dataset_key = "KDD_test+"
-    train_dataset_key = "NB15_train"
-    test_dataset_key = "NB15_test"
+    train_dataset_key = "KDD_train+"
+    test_dataset_key = "KDD_test+"
+    # train_dataset_key = "NB15_train"
+    # test_dataset_key = "NB15_test"
     if os.path.exists("saved_data/dataset.data") and os.path.exists("saved_data/value_space.data") and os.path.exists("saved_data/intervals.data"):
         dataset = load_json_from_file("saved_data/dataset.data")
         value_space_dict = load_json_from_file("saved_data/value_space.data")
