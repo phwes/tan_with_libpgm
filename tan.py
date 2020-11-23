@@ -287,7 +287,7 @@ def predict_dataset(test_dataset, root_node, classes):
             count_correct_dict[data_row['class']][1] += 1
             tot_wrong += 1
         #   Count if false positive
-        if data_row['class'] == "normal" and prediction != "normal":
+        if (data_row['class'] == "0" and prediction != "0") or (data_row['class'] == "Normal" and prediction != "Normal"):
             false_positives += 1
 
     #   Calculate the accuracy in each classification

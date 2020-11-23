@@ -118,9 +118,9 @@ def read_dataset(dataset_key):
                 if len(line) < 4:
                     continue
                 attribute_values = line.split(',')
-                #   Remove the "id" attribute and the label
+                #   Remove the "id" attribute and the attack_type
                 attribute_values.pop(0)
-                attribute_values.pop(len(attribute_values)-1)
+                attribute_values.pop(len(attribute_values)-2)
                 #   Remove "\n" at the last attribute
                 attribute_values[len(attribute_values) - 1] = attribute_values[len(attribute_values) - 1][:len(attribute_values[len(attribute_values) - 1]) - 1]
                 #   Make all the numbers to floats
