@@ -130,14 +130,16 @@ def calc_mutual_information(classes, dataset, information_edges):
                             count_xy[c][attr_name_x][attr_name_y][attr_val_x][attr_val_y] / len(dataset)
 
         #   Calculate the prior estimate
+        #   TODO: Fix this, some values are missed
         prior_estimates = {}
         count_attr_total = {}
         count_attr_val_total = {}
         for c in count_x:
-            for attr_name in px[c]:
+            for attr_name in count_x[c]:
                 if attr_name not in prior_estimates:
-                    count_attr_total[attr_name] = 0
-                    count_attr_val_total[attr_name] = {}
+                    if attr_name not in count_attr_total:
+                        count_attr_total[attr_name] = 0
+                        count_attr_val_total[attr_name] = {}
                     for attr_val in count_x[c][attr_name]:
                         count_attr_total[attr_name] += count_x[c][attr_name][attr_val]
                         if attr_val not in count_attr_val_total[attr_name]:
@@ -269,7 +271,7 @@ def smooth_prediction(data_row, root_node, pc, px, px_given_parent_c, parent_of_
     n_0 = 5  # Same value as in TAN report
     n = data_len
     prob_value = {}
-    min_val = 0.0001
+    min_val = 0.0
     for c in px:
         prob_value[c] = 1
         for attr_name in data_row:
@@ -277,6 +279,7 @@ def smooth_prediction(data_row, root_node, pc, px, px_given_parent_c, parent_of_
                 continue
             elif attr_name == root_node:
                 attr_value = data_row[attr_name]
+                #   TODO: This should always exist
                 if attr_value not in prior_estimates_dict[attr_name]:
                     prior_estimate = min_val
                 else:
@@ -294,6 +297,7 @@ def smooth_prediction(data_row, root_node, pc, px, px_given_parent_c, parent_of_
                 parent_name = parent_of_dict[attr_name]
                 parent_value = data_row[parent_name]
                 attr_value = data_row[attr_name]
+                #   TODO: This should always exist
                 if attr_value not in prior_estimates_dict[attr_name]:
                     prior_estimate = min_val
                 else:
@@ -364,6 +368,7 @@ def predict_dataset(test_dataset, root_node, classes):
     for data_row in test_dataset:
         # prediction = predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict)
         prediction = smooth_prediction(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict, prior_estimates, len(test_dataset))
+        print("Prediction: {}, correct answer: {}".format(prediction, data_row['class']))
         #   Add entry in dict, if not exists
         if data_row['class'] not in count_correct_dict:
             count_correct_dict[data_row['class']] = [0, 0]

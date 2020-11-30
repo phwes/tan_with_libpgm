@@ -108,7 +108,7 @@ def read_dataset(dataset_key):
             file_path = "res/UNSW-NB15/UNSW_NB15_testing-set.csv"
         attr_names = ["dur","proto","service","state","spkts","dpkts","sbytes","dbytes","rate","sttl","dttl","sload","dload","sloss","dloss","sinpkt","dinpkt","sjit","djit","swin","stcpb","dtcpb","dwin","tcprtt","synack","ackdat","smean","dmean","trans_depth","response_body_len","ct_srv_src","ct_state_ttl","ct_dst_ltm","ct_src_dport_ltm","ct_dst_sport_ltm","ct_dst_src_ltm","is_ftp_login","ct_ftp_cmd","ct_flw_http_mthd","ct_src_ltm","ct_srv_dst","is_sm_ips_ports","class"]
         dataset = []
-        value_space_dict = {'class' : []}
+        value_space_dict = {'class': []}
         line_num = 0
         with open(file_path, 'r') as file:
             for line in file:
@@ -122,7 +122,7 @@ def read_dataset(dataset_key):
                 attribute_values.pop(0)
                 attribute_values.pop(len(attribute_values)-1)
                 #   Remove "\n" at the last attribute
-                attribute_values[len(attribute_values) - 1] = attribute_values[len(attribute_values) - 1][:len(attribute_values[len(attribute_values) - 1]) - 1]
+                # attribute_values[len(attribute_values) - 1] = attribute_values[len(attribute_values) - 1][:len(attribute_values[len(attribute_values) - 1]) - 1]
                 #   Make all the numbers to floats
                 attribute_values[0] = float(attribute_values[0])
                 for index in range(4, len(attribute_values)-2):
