@@ -279,11 +279,11 @@ def smooth_prediction(data_row, root_node, pc, px, px_given_parent_c, parent_of_
                 continue
             elif attr_name == root_node:
                 attr_value = data_row[attr_name]
-                #   TODO: This should always exist
-                if attr_value not in prior_estimates_dict[attr_name]:
-                    prior_estimate = min_val
-                else:
-                    prior_estimate = prior_estimates_dict[attr_name][attr_value]
+                #   This should always exist (unless some string-value does not exist in training data)
+                # if attr_value not in prior_estimates_dict[attr_name]:
+                #     prior_estimate = min_val
+                # else:
+                prior_estimate = prior_estimates_dict[attr_name][attr_value]
                 prob_parents = pc[c]
                 if attr_value not in px[c][attr_name]:
                     term_one = min_val
@@ -297,11 +297,11 @@ def smooth_prediction(data_row, root_node, pc, px, px_given_parent_c, parent_of_
                 parent_name = parent_of_dict[attr_name]
                 parent_value = data_row[parent_name]
                 attr_value = data_row[attr_name]
-                #   TODO: This should always exist
-                if attr_value not in prior_estimates_dict[attr_name]:
-                    prior_estimate = min_val
-                else:
-                    prior_estimate = prior_estimates_dict[attr_name][attr_value]
+                #   This should always exist (unless some string-value does not exist in training data)
+                # if attr_value not in prior_estimates_dict[attr_name]:
+                #     prior_estimate = min_val
+                # else:
+                prior_estimate = prior_estimates_dict[attr_name][attr_value]
                 if parent_value not in px[c][parent_name]:
                     prob_parents = min_val
                 else:

@@ -4,7 +4,7 @@ import data_prep
 def read_dataset(dataset_key):
     if dataset_key == "KDD_train+" or dataset_key == "KDD_test+":
         if dataset_key == "KDD_train+":
-            file_path = "res/mod_NSL/KDDTrain+_20Percent.txt"
+            file_path = "res/mod_NSL/KDDTrain+.txt"
         else:
             file_path = "res/mod_NSL/KDDTest+.txt"
         dataset = []
@@ -163,7 +163,7 @@ def calculate_intervals(dataset_key, dataset, value_space_dict):
 
 def find_interval_value(data_value, interval_cuts):
     for cut in interval_cuts:
-        if data_value < cut:
+        if data_value <= cut:
             return str(cut)
     return str(-1)
 
