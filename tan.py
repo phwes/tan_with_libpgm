@@ -297,11 +297,12 @@ def smooth_prediction(data_row, root_node, pc, px, px_given_parent_c, parent_of_
                 parent_name = parent_of_dict[attr_name]
                 parent_value = data_row[parent_name]
                 attr_value = data_row[attr_name]
-                #   This should always exist (unless some string-value does not exist in training data)
-                # if attr_value not in prior_estimates_dict[attr_name]:
-                #     prior_estimate = min_val
-                # else:
-                prior_estimate = prior_estimates_dict[attr_name][attr_value]
+                #   For some strings in that only exist in test data set
+                if attr_value not in prior_estimates_dict[attr_name]:
+                    prior_estimate = min_val
+                    print("Missing value, Attr name: {}, Value: {}".format(attr_name, attr_value))
+                else:
+                    prior_estimate = prior_estimates_dict[attr_name][attr_value]
                 if parent_value not in px[c][parent_name]:
                     prob_parents = min_val
                 else:
@@ -326,7 +327,7 @@ def smooth_prediction(data_row, root_node, pc, px, px_given_parent_c, parent_of_
 
 #   Make a prediction on a single data row
 def predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict):
-    minimum_prob = 0.0
+    minimum_prob = 0.001
     score_c = {}
     for c in px:
         if data_row[root_node] not in px[c][root_node]:

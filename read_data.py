@@ -63,7 +63,7 @@ def read_dataset(dataset_key):
                                         'sunrpc', 'supdup', 'systat', 'telnet', 'tftp_u', 'tim_i', 'time', 'urh_i',
                                         'urp_i', 'uucp', 'uucp_path', 'vmnet', 'whois', 'X11', 'Z39_50'],
                             'flag': ['OTH', 'REJ', 'RSTO', 'RSTOS0', 'RSTR', 'S0', 'S1', 'S2', 'S3', 'SF', 'SH'],
-                            'class': ["normal", "intrusion"]}
+                            'class': []}
         with open(file_path, 'r') as file:
             for line in file:
                 attribute_values = line.split(',')
@@ -75,8 +75,8 @@ def read_dataset(dataset_key):
                 for index in range(4, 41):
                     attribute_values[index] = float(attribute_values[index])
                 data_row = dict(zip(attr_names, attribute_values))
-                if data_row['class'] != "normal":
-                    data_row['class'] = "intrusion"
+                if data_row['class'] not in value_space_dict['class']:
+                    value_space_dict['class'].append(data_row['class'])
                 dataset.append(data_row)
         return dataset, value_space_dict
     elif dataset_key == "iris_train" or dataset_key == "iris_test":
@@ -108,7 +108,7 @@ def read_dataset(dataset_key):
             file_path = "res/UNSW-NB15/UNSW_NB15_testing-set.csv"
         attr_names = ["dur","proto","service","state","spkts","dpkts","sbytes","dbytes","rate","sttl","dttl","sload","dload","sloss","dloss","sinpkt","dinpkt","sjit","djit","swin","stcpb","dtcpb","dwin","tcprtt","synack","ackdat","smean","dmean","trans_depth","response_body_len","ct_srv_src","ct_state_ttl","ct_dst_ltm","ct_src_dport_ltm","ct_dst_sport_ltm","ct_dst_src_ltm","is_ftp_login","ct_ftp_cmd","ct_flw_http_mthd","ct_src_ltm","ct_srv_dst","is_sm_ips_ports","class"]
         dataset = []
-        value_space_dict = {'class': []}
+        value_space_dict = {'class': ["Normal", "Intrusion"]}
         line_num = 0
         with open(file_path, 'r') as file:
             for line in file:
@@ -128,8 +128,8 @@ def read_dataset(dataset_key):
                 for index in range(4, len(attribute_values)-2):
                     attribute_values[index] = float(attribute_values[index])
                 data_row = dict(zip(attr_names, attribute_values))
-                if data_row['class'] not in value_space_dict['class']:
-                    value_space_dict['class'].append(data_row['class'])
+                if data_row['class'] != "Normal":
+                    data_row['class'] = "Intrusion"
                 dataset.append(data_row)
         return dataset, value_space_dict
 

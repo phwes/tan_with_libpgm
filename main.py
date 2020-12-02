@@ -4,6 +4,7 @@ import time
 import tan
 import os.path
 import kruskals
+import feature_selection
 
 
 #   Returns a list with all the nodes (attribute names)
@@ -55,6 +56,7 @@ def run_tan():
     if os.path.exists("saved_data/dataset.data") and os.path.exists("saved_data/value_space.data"):
         dataset = load_json_from_file("saved_data/dataset.data")
         value_space_dict = load_json_from_file("saved_data/value_space.data")
+        selected_real_attributes = load_json_from_file("saved_data/selected_real_attributes")
         print("Training dataset loaded.")
         #   If we have already cached the discretization
         if os.path.exists("saved_data/intervals.data"):
@@ -69,11 +71,19 @@ def run_tan():
     #   If we have not cached the dataset, we need to do everything
     else:
         dataset, value_space_dict = read_data.read_dataset(train_dataset_key)
+        #   Make feature selection
+        selected_real_attributes = feature_selection.select_by_chi(dataset)
+        print("The selected attributes are: {}".format(selected_real_attributes))
+        print("Num: {}".format(len(selected_real_attributes)))
+        #   Reduce dataset to selected features
+        dataset = feature_selection.reduce_dataset(dataset, selected_real_attributes, value_space_dict)
+
         intervals = read_data.calculate_intervals(train_dataset_key, dataset, value_space_dict)
         save_json_to_file(intervals, "saved_data/intervals.data")
         read_data.discretize_to_intervals(dataset, intervals)
         save_json_to_file(value_space_dict, "saved_data/value_space.data")
         save_json_to_file(dataset, "saved_data/dataset.data")
+        save_json_to_file(selected_real_attributes, "saved_data/selected_real_attributes")
         print("Dataset parsed.")
 
 
@@ -102,13 +112,9 @@ def run_tan():
     tan.calc_bayes_probs(dataset, parent_of_dict, root_node)
     print("Calculated last probabilities for prediction.")
 
-    # for data_row in dataset:
-    #     if data_row["class"] == "dos" and data_row["duration"] == "1.0":
-    #     # if data_row["class"] == "dos":
-    #         print(data_row)
-
     #   Read test dataset
     test_dataset, _ = read_data.read_dataset(test_dataset_key)
+    test_dataset = feature_selection.reduce_dataset(test_dataset, selected_real_attributes, value_space_dict)
     read_data.discretize_to_intervals(test_dataset, intervals)
 
     #   Make prediction on test dataset
