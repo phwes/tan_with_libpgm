@@ -118,7 +118,14 @@ def run_tan(train_dataset_key, test_dataset_key):
     read_data.discretize_to_intervals(test_dataset, intervals)
 
     #   Make prediction on test dataset
-    tan.predict_dataset(test_dataset, root_node, classes, train_dataset_key, test_dataset_key)
+    tan.predict_dataset(test_dataset, root_node, classes, train_dataset_key, test_dataset_key, smoothing=True, min_prob=0.001)
+    tan.predict_dataset(test_dataset, root_node, classes, train_dataset_key, test_dataset_key, smoothing=True,
+                        min_prob=0.0)
+    tan.predict_dataset(test_dataset, root_node, classes, train_dataset_key, test_dataset_key, smoothing=False,
+                        min_prob=0.001)
+    tan.predict_dataset(test_dataset, root_node, classes, train_dataset_key, test_dataset_key, smoothing=False,
+                        min_prob=0.0)
+
 
 
 def run_iris():

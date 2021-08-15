@@ -267,11 +267,11 @@ def calc_bayes_probs(dataset, parent_of_dict, root_node):
     save_json_to_file(px_given_parent_c, "saved_data/px_given_parent_c.data")
 
 
-def smooth_prediction(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict, prior_estimates_dict, data_len):
+def smooth_prediction(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict, prior_estimates_dict, data_len, min_prob):
     n_0 = 5  # Same value as in TAN report
     n = data_len
     prob_value = {}
-    min_val = 0.0
+    min_val = min_prob
     for c in px:
         prob_value[c] = 1
         for attr_name in data_row:
@@ -326,8 +326,8 @@ def smooth_prediction(data_row, root_node, pc, px, px_given_parent_c, parent_of_
 
 
 #   Make a prediction on a single data row
-def predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict):
-    minimum_prob = 0.001
+def predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict, min_prob):
+    minimum_prob = min_prob
     score_c = {}
     for c in px:
         if data_row[root_node] not in px[c][root_node]:
@@ -354,7 +354,7 @@ def predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_d
     return most_likely[0]
 
 
-def predict_dataset(test_dataset, root_node, classes, train_dataset_key, test_dataset_key):
+def predict_dataset(test_dataset, root_node, classes, train_dataset_key, test_dataset_key, smoothing, min_prob):
     pc = load_json_from_file("saved_data/pc.data")
     px = load_json_from_file("saved_data/px.data")
     px_given_parent_c = load_json_from_file("saved_data/px_given_parent_c.data")
@@ -367,8 +367,10 @@ def predict_dataset(test_dataset, root_node, classes, train_dataset_key, test_da
     false_positives = 0
 
     for data_row in test_dataset:
-        #   prediction = predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict)
-        prediction = smooth_prediction(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict, prior_estimates, len(test_dataset))
+        if smoothing:
+            prediction = smooth_prediction(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict, prior_estimates, len(test_dataset), min_prob)
+        else:
+            prediction = predict_data_row(data_row, root_node, pc, px, px_given_parent_c, parent_of_dict, min_prob)
         #   print("Prediction: {}, correct answer: {}".format(prediction, data_row['class']))
         #   Add entry in dict, if not exists
         if data_row['class'] not in count_correct_dict:
@@ -388,7 +390,17 @@ def predict_dataset(test_dataset, root_node, classes, train_dataset_key, test_da
             tot_wrong += 1
 
     #   Calculate TP,FN,FP and TN in each classification
-    file_name = train_dataset_key + "_" + test_dataset_key + ".json"
+    if min_prob == 0.0:
+        file_name = "no_min_prob"
+    else:
+        file_name = "min_prob"
+    if smoothing:
+        file_name += "_smoothing_"
+    else:
+        file_name += "_not_smoothing_"
+
+    file_name += train_dataset_key + "_" + test_dataset_key + ".json"
+
     results = {}
     for c in count_correct_dict:
         results[c] = {}
@@ -408,5 +420,5 @@ def predict_dataset(test_dataset, root_node, classes, train_dataset_key, test_da
     save_json_to_file(results, "results/" + file_name)
     print("Number of false positives: {}".format(false_positives))
     print("Overall recall: {}, Tot_correct: {}, Tot_wrong: {}".format(tot_correct / len(test_dataset), tot_correct,
-                                                                        tot_wrong))
+                                                                      tot_wrong))
     print("Tot number of entries: {}".format(len(test_dataset)))
