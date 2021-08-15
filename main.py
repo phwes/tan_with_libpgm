@@ -47,9 +47,9 @@ def load_json_from_file(file_path):
     return json.load(dump_file)
 
 
-def run_tan():
-    train_dataset_key = "KDD_train+"
-    test_dataset_key = "KDD_test+"
+def run_tan(train_dataset_key, test_dataset_key):
+    #train_dataset_key = "KDD_train+"
+    #test_dataset_key = "KDD_test+"
     # train_dataset_key = "NB15_train"
     # test_dataset_key = "NB15_test"
     #   If we have already cached the dataset
@@ -118,7 +118,7 @@ def run_tan():
     read_data.discretize_to_intervals(test_dataset, intervals)
 
     #   Make prediction on test dataset
-    tan.predict_dataset(test_dataset, root_node, classes)
+    tan.predict_dataset(test_dataset, root_node, classes, train_dataset_key, test_dataset_key)
 
 
 def run_iris():
@@ -167,7 +167,7 @@ def run_iris():
 def main():
     print("Begin execution.")
     start_time = time.time()
-    run_tan()
+    run_tan(train_dataset_key="KDD_train+", test_dataset_key="KDD_test+")
     # run_iris()
     end_time = time.time()
     tot_time = end_time - start_time
